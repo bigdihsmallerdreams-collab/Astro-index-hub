@@ -1,0 +1,456 @@
+-- Animal Overhead Scanner and ESP System
+
+-- Quick place check FIRST (no waiting, no blocking)
+-- ============================================================================
+-- PLACE CHECK
+-- ============================================================================
+local PLACE_ID = 109983668079237
+if game.PlaceId ~= PLACE_ID then
+    print("[Brainrot Index ESP] Wrong place, exiting")
+    return
+end
+
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
+local HttpService = game:GetService("HttpService")
+
+-- Wait for LocalPlayer (critical for auto-exec!)
+local LocalPlayer = Players.LocalPlayer
+if not LocalPlayer then
+    LocalPlayer = Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+    LocalPlayer = Players.LocalPlayer
+end
+if not LocalPlayer then
+    repeat task.wait() until Players.LocalPlayer
+    LocalPlayer = Players.LocalPlayer
+end
+
+local Workspace = game.Workspace
+
+-- ============================================================================
+-- CONFIG SYSTEM - Save/Load UI positions
+-- ============================================================================
+local CONFIG_PATH = "astroconfig/indexesp.json"
+local Config = {
+    statusPosition = {scale = {x = 1, y = 0}, offset = {x = -15, y = 15}},
+    statusExpanded = true, -- INDEX PROGRESS expanded by default
+    toIndexPosition = {scale = {x = 1, y = 0}, offset = {x = -310, y = 15}}, -- TO INDEX list position
+    toIndexExpanded = true -- TO INDEX expanded by default
+}
+
+local function ensureConfigFolder()
+    if not isfolder("astroconfig") then
+        makefolder("astroconfig")
+    end
+end
+
+local function loadConfig()
+    pcall(function()
+        if isfile(CONFIG_PATH) then
+            local data = readfile(CONFIG_PATH)
+            local loaded = HttpService:JSONDecode(data)
+            if loaded then
+                if loaded.statusPosition then Config.statusPosition = loaded.statusPosition end
+                if loaded.statusExpanded ~= nil then Config.statusExpanded = loaded.statusExpanded end
+                if loaded.toIndexPosition then Config.toIndexPosition = loaded.toIndexPosition end
+                if loaded.toIndexExpanded ~= nil then Config.toIndexExpanded = loaded.toIndexExpanded end
+            end
+        end
+    end)
+end
+
+local function saveConfig()
+    pcall(function()
+        ensureConfigFolder()
+        local data = HttpService:JSONEncode(Config)
+        writefile(CONFIG_PATH, data)
+    end)
+end
+
+-- Load config on startup (fast, file read only)
+loadConfig()
+
+-- Wait for game to load before requiring modules
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+-- Small delay to let other scripts initialize
+task.wait(0.3)
+
+-- Require the game modules (EXACTLY like the game does)
+local Packages = ReplicatedStorage:WaitForChild("Packages", 10)
+if not Packages then return end
+
+local Synchronizer = require(Packages.Synchronizer)
+local Observers = require(Packages.Observers) -- Same observer pattern the game uses
+local Gradients = require(Packages.Gradients) -- For animated gradient text
+
+local Datas = ReplicatedStorage:WaitForChild("Datas", 10)
+if not Datas then return end
+
+local AnimalsData = require(Datas.Animals)      -- Animal info: DisplayName, Rarity, HideFromIndex, IsEnabled
+local IndexData = require(Datas.Index)          -- Mutation info: IsMutation, CustomIndex, LimitedMutation
+local MutationsData = require(Datas.Mutations)  -- Mutation visual configs
+local RaritiesData = require(Datas.Rarities)    -- Rarity colors/gradients
+
+-- SharedIndex for accurate index counts
+local SharedIndex = require(ReplicatedStorage.Shared.Index)
+
+-- ============================================================================
+-- HOOK INTO GAME'S ANIMAL CONTROLLER FOR INSTANT UPDATES
+-- ============================================================================
+local Controllers = ReplicatedStorage:WaitForChild("Controllers", 10)
+if not Controllers then return end
+
+local AnimalController = require(Controllers.AnimalController)
+
+-- ============================================================================
+-- ANIMAL INDEX CHECKER - Uses EXACT game logic from StudyThis.lua lines 5904-5918
+-- ============================================================================
+-- Game logic explained:
+-- v63 = mutation type (e.g., "Albino", "Gold", "Default")
+-- v64 = IsMutation flag from IndexData[mutation]
+-- v65 = playerData.Index[animalName] (the animal's index entry)
+-- v66 = indexed check result
+--
+-- if CustomIndex exists: check v65[CustomIndex.Name]
+-- elseif IsMutation: check v65[mutationName] 
+-- else (Default): check next(v65) ~= nil (any entry exists)
+-- ============================================================================
+local AnimalIndexChecker = {}
+
+-- Debug flag - set to true to see detailed logging for all index checks
+AnimalIndexChecker.DebugMode = false
+
+function AnimalIndexChecker:IsAnimalIndexed(player, animalName, mutationType)
+    -- Get player data via Synchronizer (same as game)
+    local playerData = Synchronizer:Get(player)
+    if not playerData then 
+        if self.DebugMode then print("[IndexCheck] No playerData") end
+        return false 
+    end
+    
+    -- Get index data (same as game: v42:Get({"Index", animalName}))
+    local indexData = playerData:Get("Index")
+    if not indexData then 
+        if self.DebugMode then print("[IndexCheck] No indexData") end
+        return false 
+    end
+    
+    -- Get this animal's index entry (v65 in game)
+    local animalIndex = indexData[animalName]
+    if not animalIndex then 
+        if self.DebugMode then print("[IndexCheck]", animalName, "not in player's index at all") end
+        return false 
+    end
+    
+    -- Normalize mutation variant (nil, empty string, "Normal" -> "Default")
+    local variant = self:NormalizeMutation(mutationType)
+    
+    -- Get mutation info from IndexData (only mutations have entries, "Default" returns nil)
+    local mutationInfo = IndexData[variant]
+    
+    if self.DebugMode then
+        print("[IndexCheck] Checking:", animalName, "Mutation:", variant)
+        print("[IndexCheck] AnimalIndex contents:", HttpService:JSONEncode(animalIndex))
+        if mutationInfo then
+            print("[IndexCheck] MutationInfo: IsMutation=", mutationInfo.IsMutation, "CustomIndex=", mutationInfo.CustomIndex and mutationInfo.CustomIndex.Name or "nil")
+        else
+            print("[IndexCheck] MutationInfo: nil (Default or unknown mutation)")
+        end
+    end
+    
+    -- ========================================================================
+    -- GAME LOGIC from IndexController.lua and Shared_Index.lua:
+    -- 
+    -- The game checks: playerIndex[animalName][mutationKey]
+    -- 
+    -- For CustomIndex mutations (rare): check animalIndex[CustomIndex.Name]
+    -- For normal mutations (Gold, Diamond, etc): check animalIndex[mutationName]
+    -- For Default (no mutation / nil mutationInfo): check animalIndex["Default"]
+    -- ========================================================================
+    
+    if mutationInfo and mutationInfo.CustomIndex then
+        -- CustomIndex mutations (special handling like Aquatic)
+        local customKey = mutationInfo.CustomIndex.Name
+        local value = animalIndex[customKey]
+        if self.DebugMode then print("[IndexCheck] CustomIndex key:", customKey, "value:", value) end
+        return value ~= nil
+    elseif mutationInfo and mutationInfo.IsMutation then
+        -- Normal mutation check - look for specific mutation entry
+        local value = animalIndex[variant]
+        if self.DebugMode then print("[IndexCheck] Mutation key:", variant, "value:", value) end
+        return value ~= nil
+    else
+        -- Default/unknown mutation - check for "Default" key
+        -- This matches game logic: v22[v13 and v13 or "Default"]
+        local value = animalIndex["Default"]
+        if self.DebugMode then print("[IndexCheck] Default key value:", value) end
+        return value ~= nil
+    end
+end
+
+-- Normalize mutation name (nil, empty, "Normal" -> "Default")
+function AnimalIndexChecker:NormalizeMutation(mutation)
+    if not mutation or mutation == "" or mutation == "Normal" then
+        return "Default"
+    end
+    return mutation
+end
+
+-- Get the proper animal name (internal name, not display name)
+function AnimalIndexChecker:GetInternalName(displayName)
+    -- Search AnimalsData for matching DisplayName
+    for internalName, animalData in pairs(AnimalsData) do
+        if animalData.DisplayName == displayName then
+            return internalName
+        end
+    end
+    -- If no match found, return the display name as-is (might already be internal)
+    return displayName
+end
+
+-- Check if an animal can be shown in the index (same logic as game's SharedIndex:CanShowInIndex)
+-- This filters out:
+-- 1. Animals with HideFromIndex = true (Lucky Blocks, etc.)
+-- 2. Animals with IsEnabled() returning false (new animals not yet added to index like Los Gattitos)
+-- 3. Animals not in AnimalsData at all
+function AnimalIndexChecker:CanShowInIndex(animalName)
+    -- Use the game's actual SharedIndex method which handles all the complex logic
+    return SharedIndex:CanShowInIndex(animalName)
+end
+
+-- Check if an animal counts toward index completion (excludes admin/hidden animals)
+-- Admin animals have HideFromIndex = true - they don't count for milestone
+-- NOTE: Index V2 may have set HideFromIndex = false, so we also check the cached original state
+function AnimalIndexChecker:CountsTowardIndex(animalName)
+    local animalData = AnimalsData[animalName]
+    if not animalData then return false end
+    
+    -- Check HideFromIndex flag - this is what excludes admin animals from counting
+    if animalData.HideFromIndex then
+        return false
+    end
+    
+    -- ALSO check if Index V2 cached this as originally hidden (it may have unhidden it for display)
+    if _G.IndexV2_OriginallyHiddenAnimals and _G.IndexV2_OriginallyHiddenAnimals[animalName] then
+        return false
+    end
+    
+    -- Also check IsEnabled if it exists (some animals not yet added to game)
+    if animalData.IsEnabled and type(animalData.IsEnabled) == "function" then
+        if not animalData:IsEnabled() then
+            return false
+        end
+    end
+    
+    return true
+end
+
+-- Check if an animal is required for a specific mutation's index
+-- Some mutations (Bloodrot, Candy, Lava, Galaxy, etc.) have a specific list of required animals
+-- If no specific list exists, falls back to CountsTowardIndex check (excludes admin animals)
+function AnimalIndexChecker:IsAnimalRequiredForMutation(animalName, mutation)
+    local normalizedMutation = self:NormalizeMutation(mutation)
+    local mutationInfo = IndexData[normalizedMutation]
+    
+    if mutationInfo and mutationInfo.Index then
+        -- This mutation has a specific list of required animals
+        -- Check if our animal is in that list
+        return mutationInfo.Index[animalName] ~= nil
+    else
+        -- No specific list - use CountsTowardIndex which excludes admin/hidden animals
+        -- This applies to Gold, Diamond, Rainbow, Default, etc.
+        return self:CountsTowardIndex(animalName)
+    end
+end
+
+-- Get remaining count for a mutation using SharedIndex (same as Index Viewer)
+function AnimalIndexChecker:GetRemainingForMutation(mutation)
+    local normalizedMutation = self:NormalizeMutation(mutation)
+    local collected, needed, total = SharedIndex:GetIndexAnimals(LocalPlayer, normalizedMutation)
+    if collected and needed then
+        -- Never return negative (player may have collected bonus animals)
+        return math.max(0, needed - collected)
+    end
+    return 0
+end
+
+-- Scanner Functions
+local Scanner = {}
+
+-- Helper: Check if animal is stealable based on game code logic
+-- From PlotClient.lua:
+-- From PlotClient.lua line 520:
+--   elseif v107 and (not v107.Machine or not v107.Machine.Active) then
+-- This means: Animal is stealable if NO Machine OR Machine.Active = false
+-- Only Machine.Active = true blocks stealing!
+function Scanner:GetAnimalStatus(plot, animalIndex)
+    if not plot then return "stealable", nil end
+    
+    local status = "stealable"
+    local statusInfo = nil
+    
+    pcall(function()
+        local channel = Synchronizer:Wait(plot.Name)
+        if channel then
+            local animalList = channel:Get("AnimalList")
+            if animalList then
+                for slotKey, animalData in pairs(animalList) do
+                    if type(animalData) == "table" and animalData.Index == animalIndex then
+                        -- Only ACTIVE machine processing blocks stealing!
+                        -- Machine.Active = false (FUSING READY/CRAFTING READY) is STILL STEALABLE!
+                        if animalData.Machine and animalData.Machine.Active == true then
+                            local machineType = animalData.Machine.Type
+                            
+                            if machineType == "Fuse" then
+                                status = "fusing"  -- Actively fusing = can't steal
+                            elseif machineType == "Crafting" then
+                                status = "crafting"  -- Actively crafting = can't steal
+                            else
+                                status = "processing"  -- In any active machine = can't steal
+                            end
+                            statusInfo = animalData.Machine
+                        end
+                        -- Machine.Active = false or no Machine = STEALABLE!
+                        break
+                    end
+                end
+            end
+        end
+    end)
+    
+    return status, statusInfo
+end
+
+-- Helper to check if a plot belongs to the local player
+function Scanner:IsLocalPlayerPlot(plot)
+    -- The game sets PlotSign.YourBase.Enabled = true for the local player's plot
+    -- See PlotClient.lua line 870: v187.PlotModel.PlotSign.YourBase.Enabled = v187:GetOwner() == l_LocalPlayer_0;
+    local plotSign = plot:FindFirstChild("PlotSign")
+    if plotSign then
+        local yourBase = plotSign:FindFirstChild("YourBase")
+        if yourBase then
+            -- Check if it's a BillboardGui and is enabled
+            if yourBase:IsA("BillboardGui") and yourBase.Enabled == true then
+                return true
+            end
+        end
+    end
+    
+    return false
+end
+
+function Scanner:FindAllAnimalOverheads()
+    local overheads = {}
+    local skippedOwnPlot = false
+    local seenModels = {} -- Track models we've already added to prevent duplicates
+    
+    -- Search in Plots folder (animals on bases/podiums)
+    local plots = Workspace:FindFirstChild("Plots")
+    if plots then
+        for _, plot in ipairs(plots:GetChildren()) do
+            -- SKIP LOCAL PLAYER'S PLOT - you don't need to index your own animals!
+            if Scanner:IsLocalPlayerPlot(plot) then
+                skippedOwnPlot = true
+                continue
+            end
+            
+            -- Find animal MODELS directly on the plot
+            -- The game clones models from ReplicatedStorage.Models.Animals and parents them to plot
+            -- Model.Name = internal animal name (e.g., "1x1x1x1")
+            for _, child in ipairs(plot:GetChildren()) do
+                if child:IsA("Model") and child.Name ~= "AnimalPodiums" then
+                    local primaryPart = child.PrimaryPart or child:FindFirstChildWhichIsA("BasePart")
+                    if primaryPart then
+                        local internalName = child.Name
+                        
+                        -- FILTER: Only include if it's a known animal in AnimalsData
+                        if not AnimalsData[internalName] then
+                            continue
+                        end
+                        
+                        local mutation = child:GetAttribute("Mutation")
+                        
+                        -- Try to find the overhead attachment (quick non-recursive first)
+                        local overheadAttachment = child:FindFirstChild("OVERHEAD_ATTACHMENT")
+                        if not overheadAttachment then
+                            -- Try one level deeper (common structure: Model > Head > OVERHEAD_ATTACHMENT)
+                            local head = child:FindFirstChild("Head")
+                            if head then
+                                overheadAttachment = head:FindFirstChild("OVERHEAD_ATTACHMENT")
+                            end
+                        end
+                        local overhead = nil
+                        if overheadAttachment then
+                            overhead = overheadAttachment:FindFirstChild("AnimalOverhead")
+                        end
+                        
+                        -- Find matching podium by position
+                        local podiums = plot:FindFirstChild("AnimalPodiums")
+                        local matchingPodium = nil
+                        if podiums then
+                            for _, podium in ipairs(podiums:GetChildren()) do
+                                local base = podium:FindFirstChild("Base")
+                                if base then
+                                    local spawn = base:FindFirstChild("Spawn")
+                                    if spawn then
+                                        local spawnPos = spawn:GetPivot().Position
+                                        local modelPos = child:GetPivot().Position
+                                        if (modelPos - spawnPos).Magnitude < 10 then
+                                            matchingPodium = podium
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                        
+                        -- Mark this model as seen to prevent duplicates
+                        seenModels[child] = true
+                        
+                        -- Check if animal is stealable (only Machine.Active = true is NOT stealable)
+                        local status, statusInfo = Scanner:GetAnimalStatus(plot, internalName)
+                        
+                        table.insert(overheads, {
+                            overhead = overhead,
+                            podium = matchingPodium,
+                            plot = plot,
+                            spawn = primaryPart,
+                            animalModel = child,
+                            source = "Podium",
+                            internalName = internalName,
+                            mutation = mutation,
+                            status = status,
+                            statusInfo = statusInfo
+                        })
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Search in RenderedMovingAnimals (animals walking in the world)
+    local renderedAnimals = Workspace:FindFirstChild("RenderedMovingAnimals")
+    if renderedAnimals then
+        for _, animalModel in ipairs(renderedAnimals:GetChildren()) do
+            -- Skip if we already added this model from the Plots scan
+            if seenModels[animalModel] then
+                continue
+            end
+            -- Use the Index attribute for internal name (same as AnimalController uses)
+            local internalName = animalModel:GetAttribute("Index") or animalModel.Name
+            local mutation = animalModel:GetAttribute("Mutation")
+            
+            -- FILTER: Only include if it's a known animal in AnimalsData
+            if not AnimalsData[internalName] then
+                continue
+            end
+            
+            -- Find the overhead attachment (quick non-recursive search first)
+            local overheadAttachment = animalModel:FindFirstChild("OVERHEAD_ATTACHMENT")
+            if not
