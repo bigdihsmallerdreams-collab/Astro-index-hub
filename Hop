@@ -29,7 +29,6 @@ TopBar.Parent = ScreenGui
 
 Instance.new("UICorner",TopBar).CornerRadius = UDim.new(0,8)
 
--- LEFT TEXT
 local LeftText = Instance.new("TextLabel")
 LeftText.Size = UDim2.new(0,200,1,0)
 LeftText.Position = UDim2.new(0,10,0,0)
@@ -41,7 +40,6 @@ LeftText.Text = "made by hero"
 LeftText.TextXAlignment = Enum.TextXAlignment.Left
 LeftText.Parent = TopBar
 
--- CENTER FPS + PING
 local FPSPing = Instance.new("TextLabel")
 FPSPing.Size = UDim2.new(0,300,1,0)
 FPSPing.Position = UDim2.new(.5,-150,0,0)
@@ -52,7 +50,6 @@ FPSPing.TextSize = 16
 FPSPing.Text = "FPS: 0 | Ping: 0"
 FPSPing.Parent = TopBar
 
--- RIGHT DISCORD
 local DiscordText = Instance.new("TextLabel")
 DiscordText.Size = UDim2.new(0,200,1,0)
 DiscordText.Position = UDim2.new(1,-210,0,0)
@@ -64,7 +61,7 @@ DiscordText.TextXAlignment = Enum.TextXAlignment.Right
 DiscordText.Text = "gg/FzJdfmCfJk"
 DiscordText.Parent = TopBar
 
--- FPS + Ping Counter
+-- FPS + Ping counter
 local frames = 0
 local last = tick()
 
@@ -75,7 +72,6 @@ RunService.RenderStepped:Connect(function()
     if tick() - last >= 1 then
 
         local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-
         FPSPing.Text = "FPS: "..frames.." | Ping: "..ping.."ms"
 
         frames = 0
@@ -90,8 +86,8 @@ end)
 --------------------------------------------------
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0,280,0,260)
-Frame.Position = UDim2.new(.5,-140,.5,-130)
+Frame.Size = UDim2.new(0,240,0,260)
+Frame.Position = UDim2.new(.5,-120,.5,-130)
 Frame.BackgroundColor3 = Color3.fromRGB(20,20,25)
 Frame.Active = true
 Frame.Draggable = true
@@ -108,23 +104,13 @@ Stroke.Thickness = 1.5
 --------------------------------------------------
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1,0,0,40)
+Title.Size = UDim2.new(1,0,0,35)
 Title.BackgroundTransparency = 1
-Title.Text = "Hero Server Tools"
+Title.Text = "Heros SERVER hopper "
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
+Title.TextSize = 20
 Title.TextColor3 = Color3.new(1,1,1)
 Title.Parent = Frame
-
-local Credit = Instance.new("TextLabel")
-Credit.Size = UDim2.new(1,0,0,20)
-Credit.Position = UDim2.new(0,0,0,30)
-Credit.BackgroundTransparency = 1
-Credit.Text = "made by hero"
-Credit.Font = Enum.Font.Gotham
-Credit.TextSize = 14
-Credit.TextColor3 = Color3.fromRGB(180,180,180)
-Credit.Parent = Frame
 
 --------------------------------------------------
 -- BUTTON CREATOR
@@ -133,11 +119,11 @@ Credit.Parent = Frame
 local function createButton(text,pos,color)
 
     local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(0,200,0,40)
+    Button.Size = UDim2.new(0,180,0,32)
     Button.Position = pos
     Button.Text = text
     Button.Font = Enum.Font.GothamBold
-    Button.TextSize = 18
+    Button.TextSize = 16
     Button.TextColor3 = Color3.new(1,1,1)
     Button.BackgroundColor3 = color
     Button.Parent = Frame
@@ -145,11 +131,11 @@ local function createButton(text,pos,color)
     Instance.new("UICorner",Button).CornerRadius = UDim.new(0,10)
 
     Button.MouseEnter:Connect(function()
-        TweenService:Create(Button,TweenInfo.new(.15),{Size = UDim2.new(0,210,0,42)}):Play()
+        TweenService:Create(Button,TweenInfo.new(.15),{Size = UDim2.new(0,190,0,34)}):Play()
     end)
 
     Button.MouseLeave:Connect(function()
-        TweenService:Create(Button,TweenInfo.new(.15),{Size = UDim2.new(0,200,0,40)}):Play()
+        TweenService:Create(Button,TweenInfo.new(.15),{Size = UDim2.new(0,180,0,32)}):Play()
     end)
 
     return Button
@@ -159,9 +145,29 @@ end
 -- BUTTONS
 --------------------------------------------------
 
-local HopButton = createButton("Server Hop",UDim2.new(.5,-100,.35,0),Color3.fromRGB(0,170,255))
-local FPSButton = createButton("FPS Optimizer",UDim2.new(.5,-100,.55,0),Color3.fromRGB(0,200,120))
-local SuperButton = createButton("Super Optimizer",UDim2.new(.5,-100,.75,0),Color3.fromRGB(255,120,0))
+local HopButton = createButton("Server Hop",UDim2.new(.5,-90,.22,0),Color3.fromRGB(0,170,255))
+local FPSButton = createButton("FPS Optimizer",UDim2.new(.5,-90,.36,0),Color3.fromRGB(0,200,120))
+local SuperButton = createButton("Super Optimizer",UDim2.new(.5,-90,.50,0),Color3.fromRGB(255,120,0))
+local RejoinButton = createButton("Rejoin Server",UDim2.new(.5,-90,.64,0),Color3.fromRGB(255,80,80))
+
+--------------------------------------------------
+-- JOB ID JOINER
+--------------------------------------------------
+
+local JobBox = Instance.new("TextBox")
+JobBox.Size = UDim2.new(0,180,0,28)
+JobBox.Position = UDim2.new(.5,-90,.78,0)
+JobBox.PlaceholderText = "Enter Job ID..."
+JobBox.Text = ""
+JobBox.Font = Enum.Font.Gotham
+JobBox.TextSize = 14
+JobBox.TextColor3 = Color3.new(1,1,1)
+JobBox.BackgroundColor3 = Color3.fromRGB(35,35,40)
+JobBox.Parent = Frame
+
+Instance.new("UICorner",JobBox).CornerRadius = UDim.new(0,8)
+
+local JoinJobButton = createButton("Join Job ID",UDim2.new(.5,-90,.90,0),Color3.fromRGB(170,100,255))
 
 --------------------------------------------------
 -- OPTIMIZERS
@@ -250,3 +256,23 @@ end
 HopButton.MouseButton1Click:Connect(serverHop)
 FPSButton.MouseButton1Click:Connect(optimizeGame)
 SuperButton.MouseButton1Click:Connect(superOptimize)
+
+RejoinButton.MouseButton1Click:Connect(function()
+
+    pcall(function()
+        TeleportService:TeleportToPlaceInstance(placeId,game.JobId,player)
+    end)
+
+end)
+
+JoinJobButton.MouseButton1Click:Connect(function()
+
+    local jobId = JobBox.Text
+
+    if jobId ~= "" then
+        pcall(function()
+            TeleportService:TeleportToPlaceInstance(placeId,jobId,player)
+        end)
+    end
+
+end)
