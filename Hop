@@ -20,21 +20,51 @@ ScreenGui.Parent = player.PlayerGui
 --------------------------------------------------
 
 local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1,0,0,30)
-TopBar.BackgroundColor3 = Color3.fromRGB(10,10,10)
+TopBar.Size = UDim2.new(1,0,0,26)
+TopBar.Position = UDim2.new(0,0,0,-2)
+TopBar.BackgroundColor3 = Color3.fromRGB(0,0,0)
+TopBar.BackgroundTransparency = 0.65
 TopBar.BorderSizePixel = 0
 TopBar.Parent = ScreenGui
 
+Instance.new("UICorner",TopBar).CornerRadius = UDim.new(0,8)
+
+-- LEFT TEXT
+local LeftText = Instance.new("TextLabel")
+LeftText.Size = UDim2.new(0,200,1,0)
+LeftText.Position = UDim2.new(0,10,0,0)
+LeftText.BackgroundTransparency = 1
+LeftText.Font = Enum.Font.Gotham
+LeftText.TextSize = 14
+LeftText.TextColor3 = Color3.fromRGB(200,200,200)
+LeftText.Text = "made by hero"
+LeftText.TextXAlignment = Enum.TextXAlignment.Left
+LeftText.Parent = TopBar
+
+-- CENTER FPS + PING
 local FPSPing = Instance.new("TextLabel")
-FPSPing.Size = UDim2.new(1,0,1,0)
+FPSPing.Size = UDim2.new(0,300,1,0)
+FPSPing.Position = UDim2.new(.5,-150,0,0)
 FPSPing.BackgroundTransparency = 1
 FPSPing.Font = Enum.Font.GothamBold
 FPSPing.TextColor3 = Color3.fromRGB(0,255,150)
-FPSPing.TextSize = 18
+FPSPing.TextSize = 16
 FPSPing.Text = "FPS: 0 | Ping: 0"
 FPSPing.Parent = TopBar
 
--- FPS + Ping logic
+-- RIGHT DISCORD
+local DiscordText = Instance.new("TextLabel")
+DiscordText.Size = UDim2.new(0,200,1,0)
+DiscordText.Position = UDim2.new(1,-210,0,0)
+DiscordText.BackgroundTransparency = 1
+DiscordText.Font = Enum.Font.GothamBold
+DiscordText.TextColor3 = Color3.fromRGB(255,255,255)
+DiscordText.TextSize = 14
+DiscordText.TextXAlignment = Enum.TextXAlignment.Right
+DiscordText.Text = "gg/FzJdfmCfJk"
+DiscordText.Parent = TopBar
+
+-- FPS + Ping Counter
 local frames = 0
 local last = tick()
 
@@ -67,18 +97,11 @@ Frame.Active = true
 Frame.Draggable = true
 Frame.Parent = ScreenGui
 
-local Corner = Instance.new("UICorner",Frame)
-Corner.CornerRadius = UDim.new(0,14)
+Instance.new("UICorner",Frame).CornerRadius = UDim.new(0,14)
 
 local Stroke = Instance.new("UIStroke",Frame)
 Stroke.Color = Color3.fromRGB(0,255,200)
 Stroke.Thickness = 1.5
-
-local Gradient = Instance.new("UIGradient",Frame)
-Gradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0,Color3.fromRGB(20,20,25)),
-    ColorSequenceKeypoint.new(1,Color3.fromRGB(10,10,15))
-}
 
 --------------------------------------------------
 -- TITLE
@@ -87,9 +110,9 @@ Gradient.Color = ColorSequence.new{
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1,0,0,40)
 Title.BackgroundTransparency = 1
-Title.Text = "made by me"
+Title.Text = "Hero Server Tools"
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
+Title.TextSize = 22
 Title.TextColor3 = Color3.new(1,1,1)
 Title.Parent = Frame
 
@@ -119,57 +142,26 @@ local function createButton(text,pos,color)
     Button.BackgroundColor3 = color
     Button.Parent = Frame
 
-    local Corner = Instance.new("UICorner",Button)
-    Corner.CornerRadius = UDim.new(0,10)
+    Instance.new("UICorner",Button).CornerRadius = UDim.new(0,10)
 
-    local Stroke = Instance.new("UIStroke",Button)
-    Stroke.Color = Color3.fromRGB(255,255,255)
-    Stroke.Transparency = .7
-
-    -- hover animation
     Button.MouseEnter:Connect(function()
-
-        TweenService:Create(Button,
-            TweenInfo.new(.15),
-            {Size = UDim2.new(0,210,0,42)}
-        ):Play()
-
+        TweenService:Create(Button,TweenInfo.new(.15),{Size = UDim2.new(0,210,0,42)}):Play()
     end)
 
     Button.MouseLeave:Connect(function()
-
-        TweenService:Create(Button,
-            TweenInfo.new(.15),
-            {Size = UDim2.new(0,200,0,40)}
-        ):Play()
-
+        TweenService:Create(Button,TweenInfo.new(.15),{Size = UDim2.new(0,200,0,40)}):Play()
     end)
 
     return Button
-
 end
 
 --------------------------------------------------
 -- BUTTONS
 --------------------------------------------------
 
-local HopButton = createButton(
-    "Server Hop",
-    UDim2.new(.5,-100,.35,0),
-    Color3.fromRGB(0,170,255)
-)
-
-local FPSButton = createButton(
-    "FPS Optimizer",
-    UDim2.new(.5,-100,.55,0),
-    Color3.fromRGB(0,200,120)
-)
-
-local SuperButton = createButton(
-    "Super Optimizer",
-    UDim2.new(.5,-100,.75,0),
-    Color3.fromRGB(255,120,0)
-)
+local HopButton = createButton("Server Hop",UDim2.new(.5,-100,.35,0),Color3.fromRGB(0,170,255))
+local FPSButton = createButton("FPS Optimizer",UDim2.new(.5,-100,.55,0),Color3.fromRGB(0,200,120))
+local SuperButton = createButton("Super Optimizer",UDim2.new(.5,-100,.75,0),Color3.fromRGB(255,120,0))
 
 --------------------------------------------------
 -- OPTIMIZERS
@@ -180,16 +172,9 @@ local function optimizeGame()
     Lighting.GlobalShadows = false
 
     for _,v in pairs(workspace:GetDescendants()) do
-
-        if v:IsA("ParticleEmitter")
-        or v:IsA("Trail")
-        or v:IsA("Smoke")
-        or v:IsA("Fire") then
-
+        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
             v.Enabled = false
-
         end
-
     end
 
 end
@@ -227,11 +212,9 @@ local function getServers()
     local data = HttpService:JSONDecode(req)
 
     for _,server in pairs(data.data) do
-
         if server.playing < server.maxPlayers then
             table.insert(servers,server.id)
         end
-
     end
 
     return servers
