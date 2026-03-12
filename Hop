@@ -1,72 +1,4 @@
---// Services
-local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
-local Lighting = game:GetService("Lighting")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local Stats = game:GetService("Stats")
-
-local player = Players.LocalPlayer
-local placeId = game.PlaceId
-
---// ScreenGui
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = player.PlayerGui
-ScreenGui.Name = "HeroTools"
-
---------------------------------------------------
--- TOP BAR (FPS + PING)
---------------------------------------------------
-
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1,0,0,24)
-TopBar.BackgroundColor3 = Color3.fromRGB(0,0,0)
-TopBar.BackgroundTransparency = 0.6
-TopBar.Parent = ScreenGui
-
-local FPSPing = Instance.new("TextLabel")
-FPSPing.Size = UDim2.new(1,0,1,0)
-FPSPing.BackgroundTransparency = 1
-FPSPing.Font = Enum.Font.GothamBold
-FPSPing.TextColor3 = Color3.fromRGB(0,255,170)
-FPSPing.TextSize = 14
-FPSPing.Text = "FPS: 0 | Ping: 0"
-FPSPing.Parent = TopBar
-
-local DiscordText = Instance.new("TextLabel")
-DiscordText.Size = UDim2.new(0,200,1,0)
-DiscordText.Position = UDim2.new(1,-205,0,0)
-DiscordText.BackgroundTransparency = 1
-DiscordText.Font = Enum.Font.GothamBold
-DiscordText.Text = "gg/FzJdfmCfJk"
-DiscordText.TextColor3 = Color3.new(1,1,1)
-DiscordText.TextSize = 13
-DiscordText.TextXAlignment = Enum.TextXAlignment.Right
-DiscordText.Parent = TopBar
-
--- FPS Counter
-local frames = 0
-local last = tick()
-
-RunService.RenderStepped:Connect(function()
-
-frames += 1
-
-if tick() - last >= 1 then
-
-local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-
-FPSPing.Text = "FPS: "..frames.." | Ping: "..ping.."ms"
-
-frames = 0
-last = tick()
-
-end
-
-end)
-
---------------------------------------------------
+---------------------------------------------------
 -- MAIN GUI
 --------------------------------------------------
 
@@ -85,206 +17,52 @@ Stroke.Color = Color3.fromRGB(0,255,200)
 Stroke.Thickness = 1.2
 
 --------------------------------------------------
--- TITLE
+-- TOP RIGHT TOGGLE BUTTON (LIKE YOUR IMAGE)
 --------------------------------------------------
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1,0,0,30)
-Title.BackgroundTransparency = 1
-Title.Text = "Heros hopper"
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
-Title.TextColor3 = Color3.new(1,1,1)
-Title.Parent = Frame
-
---------------------------------------------------
--- BUTTON CREATOR
---------------------------------------------------
-
-local function createButton(text,pos,color)
-
-local Button = Instance.new("TextButton")
-Button.Size = UDim2.new(0,140,0,24)
-Button.Position = pos
-Button.Text = text
-Button.Font = Enum.Font.GothamBold
-Button.TextSize = 13
-Button.TextColor3 = Color3.new(1,1,1)
-Button.BackgroundColor3 = color
-Button.Parent = Frame
-
-Instance.new("UICorner",Button).CornerRadius = UDim.new(0,8)
-
-Button.MouseEnter:Connect(function()
-
-TweenService:Create(Button,TweenInfo.new(.15),{
-Size = UDim2.new(0,150,0,26)
-}):Play()
-
-end)
-
-Button.MouseLeave:Connect(function()
-
-TweenService:Create(Button,TweenInfo.new(.15),{
-Size = UDim2.new(0,140,0,24)
-}):Play()
-
-end)
-
-return Button
-
-end
-
---------------------------------------------------
--- BUTTONS
---------------------------------------------------
-
-local HopButton = createButton("Server Hop",UDim2.new(.5,-70,.35,0),Color3.fromRGB(0,170,255))
-
-local SuperButton = createButton("Super Boost",UDim2.new(.5,-70,.55,0),Color3.fromRGB(255,140,0))
-
-local RejoinButton = createButton("Rejoin",UDim2.new(.5,-70,.75,0),Color3.fromRGB(255,80,80))
-
---------------------------------------------------
--- SUPER OPTIMIZER
---------------------------------------------------
-
-local function superOptimize()
-
-Lighting.GlobalShadows = false
-
-for _,v in pairs(workspace:GetDescendants()) do
-
-if v:IsA("BasePart") then
-v.Material = Enum.Material.Plastic
-end
-
-if v:IsA("Decal") or v:IsA("Texture") then
-v.Transparency = 1
-end
-
-end
-
-end
-
---------------------------------------------------
--- SERVER HOP
---------------------------------------------------
-
-local function getServers()
-
-local servers = {}
-
-local req = game:HttpGet(
-"https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
-)
-
-local data = HttpService:JSONDecode(req)
-
-for _,server in pairs(data.data) do
-
-if server.playing < server.maxPlayers then
-table.insert(servers,server.id)
-end
-
-end
-
-return servers
-
-end
-
-local function serverHop()
-
-while true do
-
-local servers = getServers()
-
-if #servers > 0 then
-
-local random = servers[math.random(1,#servers)]
-
-pcall(function()
-TeleportService:TeleportToPlaceInstance(placeId,random,player)
-end)
-
-end
-
-task.wait(2)
-
-end
-
-end
-
---------------------------------------------------
--- BUTTON EVENTS
---------------------------------------------------
-
-HopButton.MouseButton1Click:Connect(serverHop)
-
-SuperButton.MouseButton1Click:Connect(superOptimize)
-
-RejoinButton.MouseButton1Click:Connect(function()
-TeleportService:TeleportToPlaceInstance(placeId,game.JobId,player)
-end)
-
----
-
--- TOGGLE BAR WITH SMOOTH ANIMATION
-
-local ToggleBar = Instance.new("Frame")
-ToggleBar.Parent = ScreenGui
-ToggleBar.Size = UDim2.new(0,220,0,36)
-ToggleBar.Position = UDim2.new(0.5,-110,1,-80)
-ToggleBar.BackgroundColor3 = Color3.fromRGB(20,20,25)
-ToggleBar.BorderSizePixel = 0
-ToggleBar.Active = true
-ToggleBar.Draggable = true
-
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(1,0)
-ToggleCorner.Parent = ToggleBar
-
-local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color = Color3.fromRGB(120,120,255)
-ToggleStroke.Thickness = 2
-ToggleStroke.Parent = ToggleBar
-
--- CLOSE BUTTON (-)
 local CloseButton = Instance.new("TextButton")
-CloseButton.Parent = ToggleBar
-CloseButton.Size = UDim2.new(0,36,1,0)
-CloseButton.Position = UDim2.new(1,-36,0,0)
-CloseButton.BackgroundTransparency = 1
+CloseButton.Parent = Frame
+CloseButton.Size = UDim2.new(0,22,0,22)
+CloseButton.Position = UDim2.new(1,-26,0,4)
+CloseButton.BackgroundColor3 = Color3.fromRGB(35,35,40)
 CloseButton.Text = "-"
 CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 22
+CloseButton.TextSize = 18
 CloseButton.TextColor3 = Color3.new(1,1,1)
+CloseButton.BorderSizePixel = 0
 
--- OPEN BUTTON (+)
+Instance.new("UICorner",CloseButton).CornerRadius = UDim.new(1,0)
+
+--------------------------------------------------
+-- FLOATING OPEN BUTTON
+--------------------------------------------------
+
 local OpenButton = Instance.new("TextButton")
-OpenButton.Parent = ToggleBar
-OpenButton.Size = UDim2.new(0,36,1,0)
-OpenButton.Position = UDim2.new(1,-36,0,0)
-OpenButton.BackgroundTransparency = 1
+OpenButton.Parent = ScreenGui
+OpenButton.Size = UDim2.new(0,40,0,40)
+OpenButton.Position = UDim2.new(0.5,-20,1,-120)
+OpenButton.BackgroundColor3 = Color3.fromRGB(18,18,22)
 OpenButton.Text = "+"
 OpenButton.Font = Enum.Font.GothamBold
-OpenButton.TextSize = 22
+OpenButton.TextSize = 24
 OpenButton.TextColor3 = Color3.new(1,1,1)
 OpenButton.Visible = false
+OpenButton.BorderSizePixel = 0
 
----
+Instance.new("UICorner",OpenButton).CornerRadius = UDim.new(1,0)
 
--- SMOOTH OPEN / CLOSE ANIMATION
+--------------------------------------------------
+-- SMOOTH ANIMATION
+--------------------------------------------------
 
-local openPos = UDim2.new(.5,-90,.5,-75)
-local closedPos = UDim2.new(.5,-90,.5,200)
+local TweenService = game:GetService("TweenService")
 
 CloseButton.MouseButton1Click:Connect(function()
 
 local tween = TweenService:Create(
 Frame,
 TweenInfo.new(0.35,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),
-{Position = closedPos, BackgroundTransparency = 1}
+{Position = UDim2.new(.5,-90,.7,-75), BackgroundTransparency = 1}
 )
 
 tween:Play()
@@ -292,7 +70,6 @@ tween:Play()
 tween.Completed:Wait()
 
 Frame.Visible = false
-CloseButton.Visible = false
 OpenButton.Visible = true
 
 end)
@@ -300,17 +77,17 @@ end)
 OpenButton.MouseButton1Click:Connect(function()
 
 Frame.Visible = true
-Frame.Position = closedPos
+Frame.Position = UDim2.new(.5,-90,.7,-75)
+Frame.BackgroundTransparency = 1
 
 local tween = TweenService:Create(
 Frame,
 TweenInfo.new(0.35,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),
-{Position = openPos, BackgroundTransparency = 0}
+{Position = UDim2.new(.5,-90,.5,-75), BackgroundTransparency = 0}
 )
 
 tween:Play()
 
 OpenButton.Visible = false
-CloseButton.Visible = true
 
 end)
