@@ -227,39 +227,90 @@ RejoinButton.MouseButton1Click:Connect(function()
 TeleportService:TeleportToPlaceInstance(placeId,game.JobId,player)
 end)
 
---------------------------------------------------
--- TOGGLE BAR (OPEN / CLOSE GUI)
---------------------------------------------------
+---
+
+-- TOGGLE BAR WITH SMOOTH ANIMATION
 
 local ToggleBar = Instance.new("Frame")
-ToggleBar.Size = UDim2.new(0,180,0,32)
-ToggleBar.Position = UDim2.new(.5,-90,1,-70)
-ToggleBar.BackgroundColor3 = Color3.fromRGB(20,20,25)
 ToggleBar.Parent = ScreenGui
+ToggleBar.Size = UDim2.new(0,220,0,36)
+ToggleBar.Position = UDim2.new(0.5,-110,1,-80)
+ToggleBar.BackgroundColor3 = Color3.fromRGB(20,20,25)
+ToggleBar.BorderSizePixel = 0
+ToggleBar.Active = true
+ToggleBar.Draggable = true
 
-Instance.new("UICorner",ToggleBar).CornerRadius = UDim.new(1,0)
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(1,0)
+ToggleCorner.Parent = ToggleBar
 
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(0,32,1,0)
-ToggleButton.Position = UDim2.new(1,-32,0,0)
-ToggleButton.Text = "-"
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.TextSize = 18
-ToggleButton.TextColor3 = Color3.new(1,1,1)
-ToggleButton.BackgroundTransparency = 1
-ToggleButton.Parent = ToggleBar
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Color = Color3.fromRGB(120,120,255)
+ToggleStroke.Thickness = 2
+ToggleStroke.Parent = ToggleBar
 
-local opened = true
+-- CLOSE BUTTON (-)
+local CloseButton = Instance.new("TextButton")
+CloseButton.Parent = ToggleBar
+CloseButton.Size = UDim2.new(0,36,1,0)
+CloseButton.Position = UDim2.new(1,-36,0,0)
+CloseButton.BackgroundTransparency = 1
+CloseButton.Text = "-"
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextSize = 22
+CloseButton.TextColor3 = Color3.new(1,1,1)
 
-ToggleButton.MouseButton1Click:Connect(function()
+-- OPEN BUTTON (+)
+local OpenButton = Instance.new("TextButton")
+OpenButton.Parent = ToggleBar
+OpenButton.Size = UDim2.new(0,36,1,0)
+OpenButton.Position = UDim2.new(1,-36,0,0)
+OpenButton.BackgroundTransparency = 1
+OpenButton.Text = "+"
+OpenButton.Font = Enum.Font.GothamBold
+OpenButton.TextSize = 22
+OpenButton.TextColor3 = Color3.new(1,1,1)
+OpenButton.Visible = false
 
-opened = not opened
-Frame.Visible = opened
+---
 
-if opened then
-ToggleButton.Text = "-"
-else
-ToggleButton.Text = "+"
-end
+-- SMOOTH OPEN / CLOSE ANIMATION
+
+local openPos = UDim2.new(.5,-90,.5,-75)
+local closedPos = UDim2.new(.5,-90,.5,200)
+
+CloseButton.MouseButton1Click:Connect(function()
+
+local tween = TweenService:Create(
+Frame,
+TweenInfo.new(0.35,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),
+{Position = closedPos, BackgroundTransparency = 1}
+)
+
+tween:Play()
+
+tween.Completed:Wait()
+
+Frame.Visible = false
+CloseButton.Visible = false
+OpenButton.Visible = true
+
+end)
+
+OpenButton.MouseButton1Click:Connect(function()
+
+Frame.Visible = true
+Frame.Position = closedPos
+
+local tween = TweenService:Create(
+Frame,
+TweenInfo.new(0.35,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),
+{Position = openPos, BackgroundTransparency = 0}
+)
+
+tween:Play()
+
+OpenButton.Visible = false
+CloseButton.Visible = true
 
 end)
