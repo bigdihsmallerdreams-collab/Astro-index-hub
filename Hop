@@ -16,12 +16,11 @@ ScreenGui.Parent = player.PlayerGui
 ScreenGui.Name = "HeroTools"
 
 --------------------------------------------------
--- TOP BAR
+-- TOP BAR (FPS + PING)
 --------------------------------------------------
 
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1,0,0,24)
-TopBar.Position = UDim2.new(0,0,0,0)
 TopBar.BackgroundColor3 = Color3.fromRGB(0,0,0)
 TopBar.BackgroundTransparency = 0.6
 TopBar.Parent = ScreenGui
@@ -92,7 +91,7 @@ Stroke.Thickness = 1.2
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1,0,0,30)
 Title.BackgroundTransparency = 1
-Title.Text = "Heros server hopper"
+Title.Text = "Heros hopper"
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 16
 Title.TextColor3 = Color3.new(1,1,1)
@@ -226,4 +225,41 @@ SuperButton.MouseButton1Click:Connect(superOptimize)
 
 RejoinButton.MouseButton1Click:Connect(function()
 TeleportService:TeleportToPlaceInstance(placeId,game.JobId,player)
+end)
+
+--------------------------------------------------
+-- TOGGLE BAR (OPEN / CLOSE GUI)
+--------------------------------------------------
+
+local ToggleBar = Instance.new("Frame")
+ToggleBar.Size = UDim2.new(0,180,0,32)
+ToggleBar.Position = UDim2.new(.5,-90,1,-70)
+ToggleBar.BackgroundColor3 = Color3.fromRGB(20,20,25)
+ToggleBar.Parent = ScreenGui
+
+Instance.new("UICorner",ToggleBar).CornerRadius = UDim.new(1,0)
+
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0,32,1,0)
+ToggleButton.Position = UDim2.new(1,-32,0,0)
+ToggleButton.Text = "-"
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.TextSize = 18
+ToggleButton.TextColor3 = Color3.new(1,1,1)
+ToggleButton.BackgroundTransparency = 1
+ToggleButton.Parent = ToggleBar
+
+local opened = true
+
+ToggleButton.MouseButton1Click:Connect(function()
+
+opened = not opened
+Frame.Visible = opened
+
+if opened then
+ToggleButton.Text = "-"
+else
+ToggleButton.Text = "+"
+end
+
 end)
