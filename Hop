@@ -180,43 +180,49 @@ end
 
 ---
 
--- SERVER HOP
+-- SERVER HOP (MOST PLAYERS + AVOID VISITED)
 
-local function getServers()
+local visitedServers = {}
 
-local servers = {}
+local function getBestServer()
+
+local bestServer = nil
+local highestPlayers = 0
 
 local req = game:HttpGet(
-"https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
+"https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Desc&limit=100"
 )
 
 local data = HttpService:JSONDecode(req)
 
 for _,server in pairs(data.data) do
-if server.playing < server.maxPlayers then
-table.insert(servers,server.id)
-end
+
+if server.playing < server.maxPlayers and not visitedServers[server.id] then
+
+if server.playing > highestPlayers then
+highestPlayers = server.playing
+bestServer = server.id
 end
 
-return servers
+end
+
+end
+
+return bestServer
+
 end
 
 local function serverHop()
 
-while true do
+local server = getBestServer()
 
-local servers = getServers()
+if server then
 
-if #servers > 0 then
-local random = servers[math.random(1,#servers)]
+visitedServers[server] = true
 
 pcall(function()
-TeleportService:TeleportToPlaceInstance(placeId,random,player)
+TeleportService:TeleportToPlaceInstance(placeId,server,player)
 end)
-
-end
-
-task.wait(2)
 
 end
 
@@ -227,6 +233,7 @@ end
 -- BUTTON EVENTS
 
 HopButton.MouseButton1Click:Connect(serverHop)
+
 SuperButton.MouseButton1Click:Connect(superOptimize)
 
 RejoinButton.MouseButton1Click:Connect(function()
