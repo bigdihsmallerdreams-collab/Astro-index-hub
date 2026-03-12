@@ -1,6 +1,73 @@
----------------------------------------------------
+--// Services
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Stats = game:GetService("Stats")
+
+local player = Players.LocalPlayer
+local placeId = game.PlaceId
+
+---
+
+-- SCREEN GUI
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = player.PlayerGui
+ScreenGui.Name = "HeroTools"
+
+---
+
+-- FPS + PING BAR
+
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1,0,0,24)
+TopBar.BackgroundColor3 = Color3.fromRGB(0,0,0)
+TopBar.BackgroundTransparency = 0.5
+TopBar.Parent = ScreenGui
+
+local FPSPing = Instance.new("TextLabel")
+FPSPing.Size = UDim2.new(1,0,1,0)
+FPSPing.BackgroundTransparency = 1
+FPSPing.Font = Enum.Font.GothamBold
+FPSPing.TextColor3 = Color3.fromRGB(0,255,170)
+FPSPing.TextSize = 14
+FPSPing.Text = "FPS: 0 | Ping: 0"
+FPSPing.Parent = TopBar
+
+local DiscordText = Instance.new("TextLabel")
+DiscordText.Size = UDim2.new(0,200,1,0)
+DiscordText.Position = UDim2.new(1,-205,0,0)
+DiscordText.BackgroundTransparency = 1
+DiscordText.Font = Enum.Font.GothamBold
+DiscordText.Text = "gg/FzJdfmCfJk"
+DiscordText.TextColor3 = Color3.new(1,1,1)
+DiscordText.TextSize = 13
+DiscordText.TextXAlignment = Enum.TextXAlignment.Right
+DiscordText.Parent = TopBar
+
+-- FPS Counter
+local frames = 0
+local last = tick()
+
+RunService.RenderStepped:Connect(function()
+
+frames += 1
+
+if tick() - last >= 1 then
+local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+FPSPing.Text = "FPS: "..frames.." | Ping: "..ping.."ms"
+frames = 0
+last = tick()
+end
+
+end)
+
+---
+
 -- MAIN GUI
---------------------------------------------------
 
 local Frame = Instance.new("Frame")
 Frame.Size = UDim2.new(0,180,0,150)
@@ -16,9 +83,22 @@ local Stroke = Instance.new("UIStroke",Frame)
 Stroke.Color = Color3.fromRGB(0,255,200)
 Stroke.Thickness = 1.2
 
---------------------------------------------------
--- TOP RIGHT TOGGLE BUTTON (LIKE YOUR IMAGE)
---------------------------------------------------
+---
+
+-- TITLE
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,0,0,30)
+Title.BackgroundTransparency = 1
+Title.Text = "Heros Hopper"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Parent = Frame
+
+---
+
+-- CORNER TOGGLE BUTTON
 
 local CloseButton = Instance.new("TextButton")
 CloseButton.Parent = Frame
@@ -32,10 +112,6 @@ CloseButton.TextColor3 = Color3.new(1,1,1)
 CloseButton.BorderSizePixel = 0
 
 Instance.new("UICorner",CloseButton).CornerRadius = UDim.new(1,0)
-
---------------------------------------------------
--- FLOATING OPEN BUTTON
---------------------------------------------------
 
 local OpenButton = Instance.new("TextButton")
 OpenButton.Parent = ScreenGui
@@ -51,11 +127,115 @@ OpenButton.BorderSizePixel = 0
 
 Instance.new("UICorner",OpenButton).CornerRadius = UDim.new(1,0)
 
---------------------------------------------------
--- SMOOTH ANIMATION
---------------------------------------------------
+---
 
-local TweenService = game:GetService("TweenService")
+-- BUTTON CREATOR
+
+local function createButton(text,pos,color)
+
+local Button = Instance.new("TextButton")
+Button.Size = UDim2.new(0,140,0,26)
+Button.Position = pos
+Button.Text = text
+Button.Font = Enum.Font.GothamBold
+Button.TextSize = 14
+Button.TextColor3 = Color3.new(1,1,1)
+Button.BackgroundColor3 = color
+Button.Parent = Frame
+
+Instance.new("UICorner",Button).CornerRadius = UDim.new(0,8)
+
+return Button
+end
+
+---
+
+-- BUTTONS
+
+local HopButton = createButton("Server Hop",UDim2.new(.5,-70,.32,0),Color3.fromRGB(0,170,255))
+local SuperButton = createButton("Super Boost",UDim2.new(.5,-70,.52,0),Color3.fromRGB(255,140,0))
+local RejoinButton = createButton("Rejoin",UDim2.new(.5,-70,.72,0),Color3.fromRGB(255,80,80))
+
+---
+
+-- SUPER OPTIMIZER
+
+local function superOptimize()
+
+Lighting.GlobalShadows = false
+
+for _,v in pairs(workspace:GetDescendants()) do
+
+if v:IsA("BasePart") then
+v.Material = Enum.Material.Plastic
+end
+
+if v:IsA("Decal") or v:IsA("Texture") then
+v.Transparency = 1
+end
+
+end
+
+end
+
+---
+
+-- SERVER HOP
+
+local function getServers()
+
+local servers = {}
+
+local req = game:HttpGet(
+"https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
+)
+
+local data = HttpService:JSONDecode(req)
+
+for _,server in pairs(data.data) do
+if server.playing < server.maxPlayers then
+table.insert(servers,server.id)
+end
+end
+
+return servers
+end
+
+local function serverHop()
+
+while true do
+
+local servers = getServers()
+
+if #servers > 0 then
+local random = servers[math.random(1,#servers)]
+
+pcall(function()
+TeleportService:TeleportToPlaceInstance(placeId,random,player)
+end)
+
+end
+
+task.wait(2)
+
+end
+
+end
+
+---
+
+-- BUTTON EVENTS
+
+HopButton.MouseButton1Click:Connect(serverHop)
+SuperButton.MouseButton1Click:Connect(superOptimize)
+
+RejoinButton.MouseButton1Click:Connect(function()
+TeleportService:TeleportToPlaceInstance(placeId,game.JobId,player)
+end)
+
+---
+
+-- SMOOTH OPEN/CLOSE
 
 CloseButton.MouseButton1Click:Connect(function()
 
